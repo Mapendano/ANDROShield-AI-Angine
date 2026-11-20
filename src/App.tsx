@@ -1,13 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { AgentPipelineStrip } from './components/AgentPipelineStrip';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Code2,
+  ShieldAlert,
+  ShieldCheck,
+} from 'lucide-react';
 import { ClinicianSummaryAndJsonView } from './components/ClinicianSummaryAndJsonView';
+import { DeveloperExportDrawer } from './components/DeveloperExportDrawer';
 import { EmergencyShortCircuitView } from './components/EmergencyShortCircuitView';
 import { GuardrailBlockedView } from './components/GuardrailBlockedView';
 import { IntakeConsole } from './components/IntakeConsole';
 import { RiskAndHormoneView } from './components/RiskAndHormoneView';
 import { SpermatogenesisTimeline } from './components/SpermatogenesisTimeline';
-import { TopBar, type WorkspaceView } from './components/TopBar';
+import {
+  MobileBottomNav,
+  TopBar,
+  type MobileTab,
+  type WorkspaceView,
+} from './components/TopBar';
 import { getStrings } from './engine/i18n';
 import {
   CLINICAL_PRESETS,
@@ -16,12 +27,24 @@ import {
   type ClinicalPreset,
 } from './engine/presets';
 import { runDeterministicTriagePipeline } from './engine/triageEngine';
-import type { AndroShieldTriageOutput, PreScreeningInput } from './engine/types';
+import type {
+  AndroShieldTriageOutput,
+  PreScreeningInput,
+  SupportedLanguage,
+} from './engine/types';
 
 const DEFAULT_PRESET = CLINICAL_PRESETS[0];
 
+const DEFAULT_INITIAL_INPUT: PreScreeningInput = {
+  ...DEFAULT_PRESET.input,
+  preferred_language: 'fr',
+  acute_symptoms: { ...DEFAULT_PRESET.input.acute_symptoms },
+  hormone_panel: { ...DEFAULT_PRESET.input.hormone_panel },
+  clinical_context_notes: getLocalizedPresetNotes(DEFAULT_PRESET.id, 'fr'),
+};
+
 const EMPTY_INPUT: PreScreeningInput = {
-  preferred_language: 'en',
+  preferred_language: 'fr',
   age: null,
   acute_symptoms: {
     acute_scrotal_pain: false,
@@ -47,23 +70,20 @@ const EMPTY_INPUT: PreScreeningInput = {
 };
 
 export default function App() {
-  const [input, setInput] = useState<PreScreeningInput>(() => ({
-    ...DEFAULT_PRESET.input,
-  }));
+  const [input, setInput] = useState<PreScreeningInput>(DEFAULT_INITIAL_INPUT);
   const [activePresetId, setActivePresetId] = useState<string | null>(
     DEFAULT_PRESET.id
   );
   const [activeView, setActiveView] = useState<WorkspaceView>('summary');
+  const [mobileTab, setMobileTab] = useState<MobileTab>('intake');
+  const [isExportDrawerOpen, setIsExportDrawerOpen] = useState(false);
   const [output, setOutput] = useState<AndroShieldTriageOutput>(() =>
-    runDeterministicTriagePipeline(DEFAULT_PRESET.input)
+    runDeterministicTriagePipeline(DEFAULT_INITIAL_INPUT)
   );
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [resilienceNotice, setResilienceNotice] = useState(false);
 
-  const requestSeqRef = { current: 0 };
-
-  // Keep sequence ref stable across renders
-  const [seqRef] = useState(() => requestSeqRef);
+  const [seqRef] = useState(() => ({ current: 0 }));
 
   async function safeReadJson<T>(res: Response): Promise<T | null> {
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
@@ -96,9 +116,17 @@ export default function App() {
   }
 
   const executeTriage = useCallback(
-    async (targetInput: PreScreeningInput, includeAiSynthesis: boolean) => {
+    async (
+      targetInput: PreScreeningInput,
+      includeAiSynthesis: boolean,
+      switchMobileToResults = false
+    ) => {
       const requestId = ++seqRef.current;
       setResilienceNotice(false);
+
+      if (switchMobileToResults) {
+        setMobileTab('summary');
+      }
 
       let baseline: AndroShieldTriageOutput;
       let backendAvailable = false;
@@ -132,8 +160,6 @@ export default function App() {
         return;
       }
 
-      // If /api/* returned HTML (e.g., static SPA preview) or backend is offline,
-      // stay cleanly in local deterministic resilience mode without failing a second fetch.
       if (!backendAvailable) {
         setResilienceNotice(true);
         setIsSynthesizing(false);
@@ -220,7 +246,8 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('autostart') === '1') {
-      void executeTriage(DEFAULT_PRESET.input, false);
+      setMobileTab('summary');
+      void executeTriage(DEFAULT_INITIAL_INPUT, false);
     }
   }, [executeTriage]);
 
@@ -242,35 +269,34 @@ export default function App() {
     setResilienceNotice(false);
     const localResult = runDeterministicTriagePipeline(cloned);
     setOutput(localResult);
-    if (activeView === 'json_output') {
-      return;
-    }
     setActiveView('summary');
+    setMobileTab('summary');
   };
 
   useEffect(() => {
-    document.documentElement.lang = input.preferred_language || 'en';
+    document.documentElement.lang = input.preferred_language || 'fr';
   }, [input.preferred_language]);
+
+  const handleLanguageChange = (newLang: SupportedLanguage) => {
+    seqRef.current += 1;
+    setIsSynthesizing(false);
+    const matchedPresetKey = matchPresetIdFromDefaultNote(
+      input.clinical_context_notes
+    );
+    const updatedNext: PreScreeningInput = {
+      ...input,
+      preferred_language: newLang,
+      clinical_context_notes: matchedPresetKey
+        ? getLocalizedPresetNotes(matchedPresetKey, newLang)
+        : input.clinical_context_notes,
+    };
+    setInput(updatedNext);
+    setOutput(runDeterministicTriagePipeline(updatedNext));
+  };
 
   const handleInputChange = (next: PreScreeningInput) => {
     if (next.preferred_language !== input.preferred_language) {
-      seqRef.current += 1;
-      setIsSynthesizing(false);
-      const matchedPresetKey = matchPresetIdFromDefaultNote(
-        next.clinical_context_notes
-      );
-      const updatedNext: PreScreeningInput = matchedPresetKey
-        ? {
-            ...next,
-            clinical_context_notes: getLocalizedPresetNotes(
-              matchedPresetKey,
-              next.preferred_language
-            ),
-          }
-        : next;
-      setInput(updatedNext);
-      const refreshed = runDeterministicTriagePipeline(updatedNext);
-      setOutput(refreshed);
+      handleLanguageChange(next.preferred_language);
       return;
     }
     setActivePresetId(null);
@@ -290,6 +316,18 @@ export default function App() {
     setOutput(runDeterministicTriagePipeline(cleared));
   };
 
+  const handleDesktopSelectView = (view: WorkspaceView) => {
+    setActiveView(view);
+    setMobileTab(view);
+  };
+
+  const handleMobileSelectTab = (tab: MobileTab) => {
+    setMobileTab(tab);
+    if (tab !== 'intake') {
+      setActiveView(tab);
+    }
+  };
+
   const preferredLang = output.multilingual_clinical_summary.preferred_language;
   const loc = getStrings(preferredLang);
   const isRtl = preferredLang === 'ar';
@@ -299,36 +337,41 @@ export default function App() {
       case 'GUARDRAIL_BLOCKED':
         return {
           label: loc.tierGuardrailBlocked,
-          color: 'text-rose-200',
-          boxClasses: 'bg-rose-950/45 border-rose-300/35',
-          Icon: ShieldAlert,
+          textClass: 'text-amber-900',
+          boxClass: 'bg-amber-50 border-amber-200',
+          iconClass: 'text-amber-700',
+          Icon: AlertCircle,
         };
       case 'EMERGENCY_SHORT_CIRCUIT':
         return {
           label: loc.tierEmergency,
-          color: 'text-rose-200',
-          boxClasses: 'bg-rose-950/45 border-rose-300/35',
+          textClass: 'text-rose-900',
+          boxClass: 'bg-rose-50 border-rose-200',
+          iconClass: 'text-rose-700',
           Icon: ShieldAlert,
         };
       case 'ELEVATED_CLINICAL_ATTENTION':
         return {
           label: loc.tierElevated,
-          color: 'text-amber-200',
-          boxClasses: 'bg-amber-950/35 border-amber-300/30',
+          textClass: 'text-amber-900',
+          boxClass: 'bg-amber-50 border-amber-200',
+          iconClass: 'text-amber-700',
           Icon: AlertCircle,
         };
       case 'MODERATE_MODIFIABLE_RISK':
         return {
           label: loc.tierModerate,
-          color: 'text-amber-200',
-          boxClasses: 'bg-amber-950/35 border-amber-300/30',
+          textClass: 'text-amber-900',
+          boxClass: 'bg-amber-50/75 border-amber-200',
+          iconClass: 'text-amber-700',
           Icon: AlertCircle,
         };
       default:
         return {
           label: loc.tierLow,
-          color: 'text-emerald-200',
-          boxClasses: 'bg-emerald-950/35 border-emerald-300/30',
+          textClass: 'text-emerald-900',
+          boxClass: 'bg-emerald-50 border-emerald-200',
+          iconClass: 'text-emerald-700',
           Icon: CheckCircle2,
         };
     }
@@ -337,94 +380,103 @@ export default function App() {
   const TierIcon = tierStatus.Icon;
 
   return (
-    <div id="top" className="min-h-screen flex flex-col bg-[#F3F6FA] text-slate-900">
+    <div id="top" className="min-h-screen flex flex-col bg-[#F5F7F8] text-slate-900">
       <TopBar
         language={input.preferred_language}
+        onLanguageChange={handleLanguageChange}
         activeView={activeView}
-        onSelectView={setActiveView}
-        onRunTriage={() => void executeTriage(input, true)}
+        onSelectView={handleDesktopSelectView}
+        onRunTriage={() => void executeTriage(input, true, true)}
+        onOpenExportDrawer={() => setIsExportDrawerOpen(true)}
         isSynthesizing={isSynthesizing}
       />
 
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Humanized Ocean-Teal Clinical Context Hero */}
-        <section className="rounded-2xl bg-gradient-to-br from-[#0B2D48] via-[#0E4C63] to-[#0F766E] px-6 py-5 sm:px-8 sm:py-6 text-white shadow-[0_4px_20px_-4px_rgba(11,45,72,0.28)] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="space-y-2 max-w-3xl">
-            <div className="text-xs text-teal-100/90 flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-white">AndroShield AI Engine</span>
-              <span aria-hidden="true">·</span>
-              <span>{loc.nonDiagnosticTag}</span>
-              <span aria-hidden="true">·</span>
-              <span>{loc.whoEauBadge}</span>
-            </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight text-balance">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
+        {/* Sober Clinical Orientation Header Card */}
+        <section
+          dir={isRtl ? 'rtl' : 'ltr'}
+          className="clinical-surface border border-slate-200 rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        >
+          <div className="space-y-1.5 max-w-3xl">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-[#0F2933] tracking-tight text-balance">
               {loc.heroTitle}
             </h1>
+            <p className="text-xs sm:text-sm text-slate-600 flex items-start gap-2 leading-relaxed">
+              <ShieldCheck
+                className="w-4 h-4 text-[#0F4C5C] shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <span>{loc.privacyReassurance}</span>
+            </p>
           </div>
 
           <div
-            className={`inline-flex items-center gap-2.5 shrink-0 px-4 py-2.5 rounded-xl border backdrop-blur-sm ${tierStatus.boxClasses}`}
+            className={`inline-flex items-center gap-2.5 shrink-0 px-4 py-2.5 rounded-xl border ${tierStatus.boxClass}`}
           >
-            <TierIcon className={`w-4 h-4 ${tierStatus.color} shrink-0`} aria-hidden="true" />
+            <TierIcon
+              className={`w-4 h-4 ${tierStatus.iconClass} shrink-0`}
+              aria-hidden="true"
+            />
             <span
               data-testid="overall-risk-tier-label"
-              className={`text-sm font-semibold ${tierStatus.color}`}
+              className={`text-sm font-semibold ${tierStatus.textClass}`}
             >
               {tierStatus.label}
             </span>
           </div>
         </section>
 
-        {/* Two-Column Clinical Console */}
+        {/* Responsive Guided Console + Clinical Workspace */}
         <div className="flex flex-col lg:flex-row items-start gap-6">
-          <IntakeConsole
-            input={input}
-            activePresetId={activePresetId}
-            onSelectPreset={handleSelectPreset}
-            onChange={handleInputChange}
-            onRunTriage={() => void executeTriage(input, true)}
-            onReset={handleReset}
-            isSynthesizing={isSynthesizing}
-          />
+          <div
+            className={
+              mobileTab === 'intake' ? 'w-full lg:w-auto' : 'hidden lg:block'
+            }
+          >
+            <IntakeConsole
+              input={input}
+              activePresetId={activePresetId}
+              onSelectPreset={handleSelectPreset}
+              onChange={handleInputChange}
+              onRunTriage={() => void executeTriage(input, true, true)}
+              onReset={handleReset}
+              isSynthesizing={isSynthesizing}
+            />
+          </div>
 
-          <div className="flex-1 min-w-0 w-full space-y-6">
-            <AgentPipelineStrip output={output} isSynthesizing={isSynthesizing} />
-
+          <div
+            className={`flex-1 min-w-0 w-full space-y-6 ${
+              mobileTab === 'intake' ? 'hidden lg:block' : 'block'
+            }`}
+          >
             {resilienceNotice && (
               <div
                 role="status"
                 dir={isRtl ? 'rtl' : 'ltr'}
                 data-testid="deterministic-resilience-banner"
-                className="bg-teal-50/90 border border-teal-200/90 rounded-xl px-4 py-3 text-xs text-teal-950 flex items-center gap-2.5"
+                className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-700 flex items-center gap-2.5"
               >
                 <ShieldCheck
-                  className="w-4 h-4 text-teal-700 shrink-0"
+                  className="w-4 h-4 text-[#0F4C5C] shrink-0"
                   aria-hidden="true"
                 />
                 <span>{loc.deterministicResilienceNotice}</span>
               </div>
             )}
 
-            {/* Conditional Routing Based on Guardrail & Emergency Red-Flag Short-Circuit */}
             {!output.guardrail_agent.passed ? (
-              activeView === 'json_output' ? (
-                <ClinicianSummaryAndJsonView output={output} showJsonOnly />
-              ) : (
-                <GuardrailBlockedView output={output} />
-              )
+              <GuardrailBlockedView output={output} />
             ) : output.emergency_short_circuit.triggered ? (
-              activeView === 'json_output' ? (
-                <ClinicianSummaryAndJsonView output={output} showJsonOnly />
-              ) : (
-                <EmergencyShortCircuitView output={output} />
-              )
+              <EmergencyShortCircuitView output={output} />
             ) : (
               <>
                 {activeView === 'summary' && (
                   <div className="space-y-6">
                     <ClinicianSummaryAndJsonView output={output} />
-                    <RiskAndHormoneView output={output} />
-                    <SpermatogenesisTimeline output={output} />
+                    <div className="hidden lg:block space-y-6">
+                      <RiskAndHormoneView output={output} />
+                      <SpermatogenesisTimeline output={output} />
+                    </div>
                   </div>
                 )}
 
@@ -435,22 +487,44 @@ export default function App() {
                 {activeView === 'cycle_74' && (
                   <SpermatogenesisTimeline output={output} />
                 )}
-
-                {activeView === 'json_output' && (
-                  <ClinicianSummaryAndJsonView output={output} showJsonOnly />
-                )}
               </>
             )}
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-white mt-8">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-500">
-          <span>{loc.footerLeft}</span>
-          <span>{loc.footerRight}</span>
+      <footer
+        dir={isRtl ? 'rtl' : 'ltr'}
+        className="border-t border-slate-200 bg-white mt-8 pb-20 lg:pb-0"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="space-y-1">
+            <div className="font-medium text-slate-700">{loc.footerLeft}</div>
+            <div>{loc.footerRight}</div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsExportDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:text-[#0F2933] hover:bg-slate-100 transition-colors whitespace-nowrap shrink-0"
+          >
+            <Code2 className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>{loc.devExportButton}</span>
+          </button>
         </div>
       </footer>
+
+      <MobileBottomNav
+        language={input.preferred_language}
+        mobileTab={mobileTab}
+        onSelectMobileTab={handleMobileSelectTab}
+      />
+
+      <DeveloperExportDrawer
+        open={isExportDrawerOpen}
+        onClose={() => setIsExportDrawerOpen(false)}
+        output={output}
+      />
     </div>
   );
 }

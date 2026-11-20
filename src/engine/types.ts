@@ -139,7 +139,7 @@ export interface ClinicalSummaryLayer {
 }
 
 export interface AndroShieldTriageOutput {
-  engine_name: 'AndroShield AI Engine';
+  engine_name: 'AndroShield Clinical Engine';
   non_diagnostic_notice: string;
   evaluated_at_iso: string;
   overall_risk_tier:

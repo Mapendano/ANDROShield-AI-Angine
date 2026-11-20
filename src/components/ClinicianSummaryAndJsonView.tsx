@@ -1,44 +1,76 @@
 import React, { useState } from 'react';
-import { Check, Copy, Download, Printer } from 'lucide-react';
+import {
+  AlertCircle,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  Copy,
+  Printer,
+  ShieldAlert,
+} from 'lucide-react';
 import { getStrings } from '../engine/i18n';
 import type { AndroShieldTriageOutput } from '../engine/types';
 
 interface ClinicianSummaryAndJsonViewProps {
   output: AndroShieldTriageOutput;
-  showJsonOnly?: boolean;
 }
 
 export const ClinicianSummaryAndJsonView: React.FC<
   ClinicianSummaryAndJsonViewProps
-> = ({ output, showJsonOnly = false }) => {
+> = ({ output }) => {
   const [copiedBrief, setCopiedBrief] = useState(false);
-  const [copiedJson, setCopiedJson] = useState(false);
 
   const summary = output.multilingual_clinical_summary;
   const loc = getStrings(summary.preferred_language);
   const isRtl = summary.preferred_language === 'ar';
-  const jsonString = JSON.stringify(output, null, 2);
 
-  const localizedTierLabel = (() => {
+  const tierMeta = (() => {
     switch (output.overall_risk_tier) {
       case 'GUARDRAIL_BLOCKED':
-        return loc.tierGuardrailBlocked;
+        return {
+          label: loc.tierGuardrailBlocked,
+          surface: 'bg-amber-50/70 border-amber-200 text-amber-950',
+          iconColor: 'text-amber-700',
+          Icon: AlertCircle,
+        };
       case 'EMERGENCY_SHORT_CIRCUIT':
-        return loc.tierEmergency;
+        return {
+          label: loc.tierEmergency,
+          surface: 'bg-rose-50/80 border-rose-200 text-rose-950',
+          iconColor: 'text-rose-700',
+          Icon: ShieldAlert,
+        };
       case 'ELEVATED_CLINICAL_ATTENTION':
-        return loc.tierElevated;
+        return {
+          label: loc.tierElevated,
+          surface: 'bg-amber-50/70 border-amber-200 text-amber-950',
+          iconColor: 'text-amber-700',
+          Icon: AlertCircle,
+        };
       case 'MODERATE_MODIFIABLE_RISK':
-        return loc.tierModerate;
+        return {
+          label: loc.tierModerate,
+          surface: 'bg-amber-50/60 border-amber-200/90 text-amber-950',
+          iconColor: 'text-amber-700',
+          Icon: AlertCircle,
+        };
       default:
-        return loc.tierLow;
+        return {
+          label: loc.tierLow,
+          surface: 'bg-emerald-50/70 border-emerald-200 text-emerald-950',
+          iconColor: 'text-emerald-700',
+          Icon: CheckCircle2,
+        };
     }
   })();
+
+  const TierIcon = tierMeta.Icon;
 
   async function handleCopyBrief() {
     const text = [
       loc.copyBriefHeader,
       `${loc.outputLanguagePrefix}: ${summary.language_label}`,
-      `${loc.riskTierLabel}: ${localizedTierLabel}`,
+      `${loc.riskTierLabel}: ${tierMeta.label}`,
       ``,
       `${loc.preScreeningLabel.toUpperCase()}:`,
       summary.patient_friendly_overview,
@@ -58,87 +90,21 @@ export const ClinicianSummaryAndJsonView: React.FC<
     setTimeout(() => setCopiedBrief(false), 2000);
   }
 
-  async function handleCopyJson() {
-    await navigator.clipboard.writeText(jsonString);
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2000);
-  }
-
-  function handleDownloadJson() {
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `androshield-triage-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  if (showJsonOnly) {
-    return (
-      <section
-        aria-label={loc.jsonPayloadTitle}
-        data-testid="json-output-panel"
-        className="clinical-surface border border-slate-200/70 rounded-xl overflow-hidden"
-      >
-        <div
-          dir={isRtl ? 'rtl' : 'ltr'}
-          className="px-5 py-3.5 bg-gradient-to-r from-[#0B2D48] to-[#0E4C63] text-white flex flex-wrap items-center justify-between gap-3"
-        >
-          <div>
-            <h2 className="font-display text-base font-semibold text-white">
-              {loc.jsonPayloadTitle}
-            </h2>
-            <p className="text-xs text-teal-100/85 mt-0.5">
-              {loc.jsonPayloadSubtitle}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCopyJson}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/10 border border-white/25 rounded-lg hover:bg-white/20 transition-colors whitespace-nowrap"
-            >
-              {copiedJson ? (
-                <Check className="w-3.5 h-3.5 text-emerald-300" aria-hidden="true" />
-              ) : (
-                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-              )}
-              <span>{copiedJson ? loc.copiedJson : loc.copyJson}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadJson}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-white/10 border border-white/25 rounded-lg hover:bg-white/20 transition-colors whitespace-nowrap"
-            >
-              <Download className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{loc.downloadJson}</span>
-            </button>
-          </div>
-        </div>
-        <pre className="p-5 text-xs font-mono text-slate-800 bg-slate-50 overflow-x-auto max-h-[680px] leading-relaxed">
-          {jsonString}
-        </pre>
-      </section>
-    );
-  }
-
   return (
     <section
       dir={isRtl ? 'rtl' : 'ltr'}
       data-testid="clinician-summary-panel"
-      className="clinical-surface border border-slate-200/70 rounded-xl overflow-hidden"
+      className="clinical-surface border border-slate-200 rounded-2xl overflow-hidden"
     >
-      <div className="px-5 py-4 bg-gradient-to-r from-teal-50/75 via-white to-sky-50/65 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+      {/* Header */}
+      <div className="p-5 sm:px-6 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
         <div>
-          <h2 className="font-display text-base font-semibold text-[#0B2D48]">
+          <h2 className="font-display text-base sm:text-lg font-semibold text-[#0F2933]">
             {loc.clinicianBriefTitle}
           </h2>
-          <p className="text-xs text-teal-900/75 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             {loc.outputLanguagePrefix}: {summary.language_label} ·{' '}
-            {output.ai_synthesis_metadata.mode === 'gemini_enriched'
-              ? `${loc.synthesizedViaPrefix} ${output.ai_synthesis_metadata.model}`
-              : loc.deterministicEngineLabel}
+            {loc.deterministicEngineLabel}
           </p>
         </div>
 
@@ -146,19 +112,19 @@ export const ClinicianSummaryAndJsonView: React.FC<
           <button
             type="button"
             onClick={handleCopyBrief}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-900 bg-white border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-medium text-[#0F4C5C] bg-[#F0F6F7] border border-[#0F4C5C]/20 rounded-xl hover:bg-[#E6F1F3] transition-colors whitespace-nowrap"
           >
             {copiedBrief ? (
               <Check className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
             ) : (
-              <Copy className="w-3.5 h-3.5 text-teal-700" aria-hidden="true" />
+              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
             )}
             <span>{copiedBrief ? loc.copiedBrief : loc.copyBrief}</span>
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300/90 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" aria-hidden="true" />
             <span>{loc.printSummary}</span>
@@ -166,31 +132,49 @@ export const ClinicianSummaryAndJsonView: React.FC<
         </div>
       </div>
 
-      <div className="p-5 space-y-5">
-        <div className="space-y-1.5">
-          <div className="text-xs font-semibold text-teal-800 uppercase tracking-wide">
-            {loc.preScreeningLabel}
+      <div className="p-5 sm:px-6 space-y-6">
+        {/* Priority Strip */}
+        <div
+          className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${tierMeta.surface}`}
+        >
+          <div className="flex items-center gap-2.5">
+            <TierIcon className={`w-4 h-4 shrink-0 ${tierMeta.iconColor}`} aria-hidden="true" />
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-xs font-medium opacity-80">
+                {loc.prioritySectionLabel}:
+              </span>
+              <span className="text-sm font-semibold">{tierMeta.label}</span>
+            </div>
           </div>
-          <p className="text-sm text-slate-900 leading-relaxed">
+        </div>
+
+        {/* Key Points Summary */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]">
+            {loc.preScreeningLabel}
+          </h3>
+          <p className="text-[15px] text-slate-800 leading-relaxed">
             {summary.patient_friendly_overview}
           </p>
         </div>
 
-        <div className="pt-4 border-t border-slate-200/80 space-y-2">
-          <div className="text-xs font-semibold text-sky-900 uppercase tracking-wide">
+        {/* Structured Note to Share With Clinician */}
+        <div className="pt-5 border-t border-slate-200/80 space-y-2.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]">
             {loc.clinicianPreVisitNoteLabel}
-          </div>
-          <p className="text-sm text-slate-800 leading-relaxed bg-sky-50/65 border border-sky-200/80 rounded-lg p-3.5">
+          </h3>
+          <p className="text-sm text-slate-800 leading-relaxed bg-[#F8FAFC] border border-slate-200 rounded-xl p-4">
             {summary.clinician_handoff_summary}
           </p>
         </div>
 
+        {/* Consultation Discussion Questions */}
         {summary.clinician_discussion_questions.length > 0 && (
-          <div className="pt-4 border-t border-slate-200/80 space-y-2">
-            <div className="text-xs font-semibold text-teal-900 uppercase tracking-wide">
+          <div className="pt-5 border-t border-slate-200/80 space-y-2.5">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]">
               {loc.discussionQuestionsTitle}
-            </div>
-            <ul className="space-y-1.5 text-sm text-slate-800 list-disc pl-5 marker:text-teal-600">
+            </h3>
+            <ul className="space-y-2 text-sm text-slate-800 list-disc pl-5 marker:text-[#0F4C5C] leading-relaxed">
               {summary.clinician_discussion_questions.map((q) => (
                 <li key={q}>{q}</li>
               ))}
@@ -198,15 +182,29 @@ export const ClinicianSummaryAndJsonView: React.FC<
           </div>
         )}
 
-        <div className="pt-4 border-t border-slate-200/80 space-y-2">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            {loc.limitationsTitle}
+        {/* Non-Diagnostic Guidance, Limitations & Clinical References */}
+        <div className="pt-5 border-t border-slate-200/80 space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {loc.limitationsTitle}
+            </h3>
+            <p className="text-xs font-medium text-slate-700 leading-relaxed">
+              {loc.nonDiagnosticReminder}
+            </p>
+            <ul className="space-y-1.5 text-xs text-slate-600 list-disc pl-5 marker:text-slate-400 leading-relaxed">
+              {summary.explicit_limitations.map((lim) => (
+                <li key={lim}>{lim}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1 text-xs text-slate-600 list-disc pl-5 marker:text-slate-400">
-            {summary.explicit_limitations.map((lim) => (
-              <li key={lim}>{lim}</li>
-            ))}
-          </ul>
+
+          <div className="rounded-xl bg-[#F8FAFC] border border-slate-200/90 p-3.5 flex items-start gap-2.5">
+            <BookOpen className="w-4 h-4 text-[#0F4C5C] shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="space-y-0.5 text-xs text-slate-600 leading-relaxed">
+              <div className="font-semibold text-slate-800">{loc.referencesTitle}</div>
+              <p>{loc.referencesBody}</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

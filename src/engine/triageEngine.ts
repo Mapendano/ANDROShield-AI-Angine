@@ -926,7 +926,7 @@ export function runDeterministicTriagePipeline(
       );
 
     return {
-      engine_name: 'AndroShield AI Engine',
+      engine_name: 'AndroShield Clinical Engine',
       non_diagnostic_notice: loc.pipelineNonDiagnosticNotice,
       evaluated_at_iso,
       overall_risk_tier,
@@ -981,7 +981,7 @@ export function runDeterministicTriagePipeline(
       );
 
     return {
-      engine_name: 'AndroShield AI Engine',
+      engine_name: 'AndroShield Clinical Engine',
       non_diagnostic_notice: loc.pipelineNonDiagnosticNotice,
       evaluated_at_iso,
       overall_risk_tier,
@@ -1012,7 +1012,7 @@ export function runDeterministicTriagePipeline(
   );
 
   return {
-    engine_name: 'AndroShield AI Engine',
+    engine_name: 'AndroShield Clinical Engine',
     non_diagnostic_notice: loc.pipelineNonDiagnosticNotice,
     evaluated_at_iso,
     overall_risk_tier,

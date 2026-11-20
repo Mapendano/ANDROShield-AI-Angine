@@ -1,7 +1,8 @@
 export interface TranslationBundle {
-  // TopBar & Hero & Footer
+  // TopBar & Hero & Footer & Clinical UX
   heroTitle: string;
   whoEauBadge: string;
+  navIntake: string;
   navPreScreening: string;
   navRiskMatrix: string;
   navCycle74: string;
@@ -12,6 +13,16 @@ export interface TranslationBundle {
   footerLeft: string;
   footerRight: string;
   deterministicResilienceNotice: string;
+  privacyReassurance: string;
+  referencesTitle: string;
+  referencesBody: string;
+  devExportButton: string;
+  devExportTitle: string;
+  devExportSubtitle: string;
+  devExportClose: string;
+  prioritySectionLabel: string;
+  keyPointsTitle: string;
+  nonDiagnosticReminder: string;
   ariaWorkspaceNav: string;
   ariaMobileNav: string;
   ariaIntakeConsole: string;

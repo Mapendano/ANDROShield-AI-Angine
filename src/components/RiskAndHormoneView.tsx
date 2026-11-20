@@ -32,7 +32,7 @@ function SeverityIndicator({
 }) {
   if (severity === 'elevated') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 whitespace-nowrap">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 whitespace-nowrap">
         <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         {loc.severityLabels.elevated}
       </span>
@@ -40,7 +40,7 @@ function SeverityIndicator({
   }
   if (severity === 'moderate') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 whitespace-nowrap">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 whitespace-nowrap">
         <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         {loc.severityLabels.moderate}
       </span>
@@ -48,14 +48,14 @@ function SeverityIndicator({
   }
   if (severity === 'mild') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 whitespace-nowrap">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0F4C5C] whitespace-nowrap">
         <Info className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         {loc.severityLabels.mild}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 whitespace-nowrap">
       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
       {loc.severityLabels.optimal}
     </span>
@@ -72,28 +72,28 @@ function HormoneStatusLabel({
   switch (status) {
     case 'elevated_signal':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 whitespace-nowrap">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {loc.hormoneStatusLabels.elevated_signal}
         </span>
       );
     case 'low_signal':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 whitespace-nowrap">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {loc.hormoneStatusLabels.low_signal}
         </span>
       );
     case 'borderline':
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 whitespace-nowrap">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {loc.hormoneStatusLabels.borderline}
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 whitespace-nowrap">
           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           {loc.hormoneStatusLabels.normal_reference}
         </span>
@@ -111,44 +111,44 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="space-y-6">
-      {/* Lifestyle & Exposure Signal Matrix + SVG Spectrum */}
-      <section className="clinical-surface border border-slate-200/70 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 bg-gradient-to-r from-teal-50/75 via-white to-sky-50/65 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      {/* Lifestyle & Exposure Signal Matrix + Calibration Bars */}
+      <section className="clinical-surface border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="p-5 sm:px-6 bg-white border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h2 className="font-display text-base font-semibold text-[#0B2D48]">
+            <h2 className="font-display text-base sm:text-lg font-semibold text-[#0F2933]">
               {loc.riskMatrixTitle}
             </h2>
-            <p className="text-xs text-teal-900/75 mt-0.5">{loc.riskMatrixSubtitle}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{loc.riskMatrixSubtitle}</p>
           </div>
           <div className="text-xs font-mono tabular-nums text-slate-700">
             {loc.modifiableSignalsFlagged}{' '}
-            <span className="font-semibold text-[#0B2D48]">
+            <span className="font-semibold text-[#0F4C5C]">
               {risk_and_lifestyle_analyzer.composite_modifiable_signals}
             </span>
           </div>
         </div>
 
-        {/* Clean SVG Calibration Spectrum */}
-        <div dir="ltr" className="px-5 py-4 border-b border-slate-200/80 bg-[#F8FAFD]">
-          <div className="text-xs font-semibold text-teal-900 mb-2.5">
+        {/* Visual Exposure Intensity Spectrum */}
+        <div dir="ltr" className="p-5 sm:px-6 border-b border-slate-200 bg-[#F8FAFC]">
+          <div className="text-xs font-semibold text-[#0F4C5C] mb-3">
             {loc.calibrationSpectrumTitle}
           </div>
           <svg
             role="img"
             aria-label={loc.calibrationSpectrumTitle}
-            viewBox={`0 0 660 ${Math.max(1, lifestyle_signals.length) * 28 + 16}`}
+            viewBox={`0 0 660 ${Math.max(1, lifestyle_signals.length) * 28 + 14}`}
             className="w-full h-auto"
           >
             {lifestyle_signals.map((sig, idx) => {
-              const y = idx * 28 + 10;
+              const y = idx * 28 + 8;
               const pct = SEVERITY_WEIGHT[sig.severity];
               const barColor =
                 sig.severity === 'elevated'
-                  ? '#E11D48'
+                  ? '#BE123C'
                   : sig.severity === 'moderate'
                     ? '#D97706'
                     : sig.severity === 'mild'
-                      ? '#0284C7'
+                      ? '#0F4C5C'
                       : '#059669';
               return (
                 <g key={sig.id}>
@@ -166,7 +166,7 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
                     x="245"
                     y={y + 3}
                     width="305"
-                    height="11"
+                    height="10"
                     rx="5"
                     fill="#E2E8F0"
                   />
@@ -174,7 +174,7 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
                     x="245"
                     y={y + 3}
                     width={(305 * pct) / 100}
-                    height="11"
+                    height="10"
                     rx="5"
                     fill={barColor}
                   />
@@ -194,19 +194,22 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
           </svg>
         </div>
 
-        {/* Structured Risk Rows */}
+        {/* Structured Factor Rows */}
         <div className="divide-y divide-slate-200/80">
           {lifestyle_signals.map((sig) => (
-            <div key={sig.id} className="p-5 space-y-2 hover:bg-slate-50/60 transition-colors">
+            <div
+              key={sig.id}
+              className="p-5 sm:px-6 space-y-2 hover:bg-slate-50/60 transition-colors"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                   <h3 className="text-sm font-semibold text-slate-900">
                     {sig.label}
                   </h3>
-                  <span className="text-xs text-slate-400" aria-hidden="true">
+                  <span className="text-xs text-slate-300" aria-hidden="true">
                     ·
                   </span>
-                  <span className="text-xs font-mono tabular-nums text-teal-800 font-medium">
+                  <span className="text-xs font-mono tabular-nums text-[#0F4C5C] font-medium">
                     {sig.observed_value}
                   </span>
                 </div>
@@ -232,18 +235,18 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
       </section>
 
       {/* Optional Hormone Marker Analysis */}
-      <section className="clinical-surface border border-slate-200/70 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 bg-gradient-to-r from-sky-50/75 via-white to-indigo-50/55 border-b border-slate-200/80">
-          <h2 className="font-display text-base font-semibold text-[#0B2D48]">
+      <section className="clinical-surface border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="p-5 sm:px-6 bg-white border-b border-slate-200">
+          <h2 className="font-display text-base sm:text-lg font-semibold text-[#0F2933]">
             {loc.hormoneReviewTitle}
           </h2>
-          <p className="text-xs text-slate-600 mt-0.5">
+          <p className="text-xs text-slate-600 mt-1 leading-relaxed">
             {hormone_analysis.diagnostic_limitation}
           </p>
         </div>
 
         {!hormone_analysis.markers_provided ? (
-          <div className="p-5 text-sm text-slate-600 bg-slate-50/30">
+          <div className="p-5 sm:px-6 text-sm text-slate-600 bg-slate-50/40 leading-relaxed">
             {loc.hormoneEmptyState}
           </div>
         ) : (
@@ -251,16 +254,16 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-teal-50/60 border-b border-slate-200 text-xs font-semibold text-teal-950">
-                    <th className="py-2.5 px-4">{loc.hormoneTableHeaders.marker}</th>
-                    <th className="py-2.5 px-4 text-right">
+                  <tr className="bg-[#F8FAFC] border-b border-slate-200 text-xs font-semibold text-[#0F2933]">
+                    <th className="py-3 px-4">{loc.hormoneTableHeaders.marker}</th>
+                    <th className="py-3 px-4 text-right">
                       {loc.hormoneTableHeaders.observed}
                     </th>
-                    <th className="py-2.5 px-4 text-right">
+                    <th className="py-3 px-4 text-right">
                       {loc.hormoneTableHeaders.typicalRef}
                     </th>
-                    <th className="py-2.5 px-4">{loc.hormoneTableHeaders.status}</th>
-                    <th className="py-2.5 px-4">{loc.hormoneTableHeaders.note}</th>
+                    <th className="py-3 px-4">{loc.hormoneTableHeaders.status}</th>
+                    <th className="py-3 px-4">{loc.hormoneTableHeaders.note}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-sm">
@@ -275,23 +278,23 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
                             : loc.hormoneMarkerNames.e2;
                     return (
                       <tr key={m.marker} className="hover:bg-slate-50/70">
-                        <td className="py-3 px-4 font-medium text-slate-900 whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-medium text-slate-900 whitespace-nowrap">
                           {markerDisplay}
                         </td>
-                      <td className="py-3 px-4 text-right font-mono tabular-nums text-slate-900 whitespace-nowrap">
-                        {m.value}{' '}
-                        <span className="text-xs text-slate-500">{m.unit}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono tabular-nums text-xs text-slate-600 whitespace-nowrap">
-                        {m.reference_interval} {m.unit}
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <HormoneStatusLabel status={m.status} loc={loc} />
-                      </td>
-                      <td className="py-3 px-4 text-xs text-slate-700 leading-relaxed min-w-[240px]">
-                        {m.interpretation_note}
-                      </td>
-                    </tr>
+                        <td className="py-3.5 px-4 text-right font-mono tabular-nums text-slate-900 whitespace-nowrap">
+                          {m.value}{' '}
+                          <span className="text-xs text-slate-500">{m.unit}</span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono tabular-nums text-xs text-slate-600 whitespace-nowrap">
+                          {m.reference_interval} {m.unit}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <HormoneStatusLabel status={m.status} loc={loc} />
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-slate-700 leading-relaxed min-w-[240px]">
+                          {m.interpretation_note}
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -299,11 +302,11 @@ export const RiskAndHormoneView: React.FC<RiskAndHormoneViewProps> = ({
             </div>
 
             {hormone_analysis.pattern_signals.length > 0 && (
-              <div className="p-5 bg-amber-50/60 space-y-2">
+              <div className="p-5 sm:px-6 bg-amber-50/70 space-y-2">
                 <div className="text-xs font-semibold text-amber-900">
                   {loc.hormonePatternHeading}
                 </div>
-                <ul className="space-y-1.5 text-sm text-amber-950 list-disc pl-5">
+                <ul className="space-y-1.5 text-sm text-amber-950 list-disc pl-5 leading-relaxed">
                   {hormone_analysis.pattern_signals.map((sig) => (
                     <li key={sig}>{sig}</li>
                   ))}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, ShieldAlert, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { CLINICAL_PRESETS, type ClinicalPreset } from '../engine/presets';
 import { getStrings } from '../engine/i18n';
 import { LANGUAGE_LABELS } from '../engine/triageEngine';
@@ -37,7 +37,21 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
   onReset,
   isSynthesizing,
 }) => {
-  const [hormonePanelOpen, setHormonePanelOpen] = useState(true);
+  const hasHormoneValues = Boolean(
+    input.hormone_panel?.lh_iu_l != null ||
+      input.hormone_panel?.fsh_iu_l != null ||
+      input.hormone_panel?.total_testosterone_ng_dl != null ||
+      input.hormone_panel?.estradiol_pg_ml != null
+  );
+
+  const [hormonePanelOpen, setHormonePanelOpen] = useState(hasHormoneValues);
+
+  useEffect(() => {
+    if (hasHormoneValues) {
+      setHormonePanelOpen(true);
+    }
+  }, [hasHormoneValues]);
+
   const loc = getStrings(input.preferred_language);
 
   const hasAcuteFlag =
@@ -46,66 +60,52 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
     input.acute_symptoms.fever_with_scrotal_pain ||
     input.acute_symptoms.scrotal_or_pelvic_trauma;
 
+  const fieldClasses =
+    'w-full h-11 px-3 text-sm bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-[#0F4C5C] focus:ring-2 focus:ring-[#0F4C5C]/15 focus:outline-none transition-colors';
+  const numberFieldClasses = `${fieldClasses} font-mono tabular-nums`;
+
   return (
     <aside
       dir={input.preferred_language === 'ar' ? 'rtl' : 'ltr'}
       aria-label={loc.ariaIntakeConsole}
-      className="w-full lg:w-[390px] xl:w-[410px] shrink-0 clinical-surface border border-slate-200/70 rounded-xl overflow-hidden"
+      className="w-full lg:w-[400px] xl:w-[420px] shrink-0 clinical-surface border border-slate-200 rounded-2xl overflow-hidden"
     >
-      {/* Preset Quick-Load Bar */}
-      <div className="p-4 bg-gradient-to-br from-teal-50/85 via-sky-50/55 to-white border-b border-slate-200/80">
-        <div className="flex items-center justify-between mb-2.5">
-          <h2 className="font-display text-sm font-semibold text-[#0B2D48]">
+      {/* Situation Examples Bar */}
+      <div className="p-5 bg-slate-50/75 border-b border-slate-200">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="font-display text-sm font-semibold text-[#0F2933]">
             {loc.presetsTitle}
           </h2>
           <button
             type="button"
             onClick={onReset}
-            className="text-xs font-medium text-teal-800 hover:text-teal-950 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-teal-700"
+            className="text-xs font-medium text-[#0F4C5C] hover:text-[#0C3E4B] underline underline-offset-2 py-1 focus-visible:outline-2 focus-visible:outline-[#0F4C5C]"
           >
             {loc.resetFormButton}
           </button>
         </div>
+
         <div className="grid grid-cols-2 gap-2">
           {CLINICAL_PRESETS.map((preset) => {
             const active = activePresetId === preset.id;
             const presetLabel = loc.presetLabels[preset.id];
-            const activeClasses =
-              preset.id === 'emergency_red_flag'
-                ? 'bg-rose-700 border-rose-700 text-white shadow-sm'
-                : preset.id === 'guardrail_test'
-                  ? 'bg-amber-600 border-amber-600 text-white shadow-sm'
-                  : preset.id === 'hormone_endocrine_signal'
-                    ? 'bg-sky-700 border-sky-700 text-white shadow-sm'
-                    : 'bg-teal-700 border-teal-700 text-white shadow-sm';
-            const inactiveHover =
-              preset.id === 'emergency_red_flag'
-                ? 'hover:border-rose-300 hover:bg-rose-50/60'
-                : preset.id === 'guardrail_test'
-                  ? 'hover:border-amber-300 hover:bg-amber-50/60'
-                  : preset.id === 'hormone_endocrine_signal'
-                    ? 'hover:border-sky-300 hover:bg-sky-50/60'
-                    : 'hover:border-teal-300 hover:bg-teal-50/60';
             return (
               <button
                 key={preset.id}
                 type="button"
+                aria-pressed={active}
                 onClick={() => onSelectPreset(preset)}
-                className={`px-3 py-2 text-left text-xs font-medium rounded-lg border transition-all duration-150 min-h-[40px] focus-visible:outline-2 focus-visible:outline-teal-700 ${
+                className={`px-3 py-2 text-left text-xs font-medium leading-snug rounded-xl border min-h-[44px] focus-visible:outline-2 focus-visible:outline-[#0F4C5C] ${
                   active
-                    ? activeClasses
-                    : `bg-white border-slate-200/90 text-slate-700 ${inactiveHover}`
+                    ? 'bg-[#0F4C5C] border-[#0F4C5C] text-white font-semibold'
+                    : 'bg-white border-slate-200 text-slate-700 hover:border-[#0F4C5C]/40 hover:bg-[#F0F6F7]/50'
                 }`}
               >
-                <span className="block truncate">{presetLabel}</span>
+                <span className="block">{presetLabel}</span>
               </button>
             );
           })}
         </div>
-        <p className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-600">
-          <ShieldCheck className="w-3.5 h-3.5 text-teal-700 shrink-0" aria-hidden="true" />
-          <span>{loc.zeroPiiNotice}</span>
-        </p>
       </div>
 
       {/* Form Body */}
@@ -116,16 +116,16 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
         }}
         className="divide-y divide-slate-200/80"
       >
-        {/* 01. Language & Adult Range */}
-        <div className="p-4 space-y-3">
-          <h3 className="text-xs font-semibold tracking-wide text-teal-900">
+        {/* Basic Info */}
+        <div className="p-5 space-y-3.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]">
             {loc.sec01Title}
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="preferred-language"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.preferredLanguageLabel}
               </label>
@@ -138,7 +138,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                     preferred_language: e.target.value as SupportedLanguage,
                   })
                 }
-                className="w-full h-10 px-2.5 text-sm bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all duration-150"
+                className={fieldClasses}
               >
                 {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
                   <option key={code} value={code}>
@@ -150,7 +150,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
             <div>
               <label
                 htmlFor="patient-age"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.ageLabel}
               </label>
@@ -166,38 +166,41 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder={loc.agePlaceholder}
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all duration-150"
+                className={numberFieldClasses}
               />
             </div>
           </div>
         </div>
 
-        {/* 02. Acute Red-Flag Triage */}
+        {/* Acute Medical Warning Signs */}
         <div
-          className={`p-4 space-y-2.5 transition-colors duration-150 ${
-            hasAcuteFlag ? 'bg-rose-50/90' : 'bg-rose-50/30'
+          className={`p-5 space-y-3 transition-colors duration-150 ${
+            hasAcuteFlag ? 'bg-rose-50/75' : 'bg-white'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold tracking-wide text-rose-900 flex items-center gap-1.5">
-              <ShieldAlert
-                className={`w-4 h-4 shrink-0 ${
-                  hasAcuteFlag ? 'text-rose-700' : 'text-rose-600/75'
-                }`}
-                aria-hidden="true"
-              />
+          <div className="flex items-center justify-between gap-2">
+            <h3
+              className={`text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5 ${
+                hasAcuteFlag ? 'text-rose-900' : 'text-[#0F4C5C]'
+              }`}
+            >
+              {hasAcuteFlag && (
+                <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" aria-hidden="true" />
+              )}
               <span>{loc.sec02Title}</span>
             </h3>
             <span
-              className={`text-xs font-mono ${
+              className={`text-xs font-medium shrink-0 ${
                 hasAcuteFlag ? 'text-rose-700 font-semibold' : 'text-slate-500'
               }`}
             >
               {hasAcuteFlag ? loc.flagActive : loc.flagClear}
             </span>
           </div>
-          <p className="text-xs text-slate-600">{loc.sec02Help}</p>
-          <div className="space-y-1.5 pt-1">
+
+          <p className="text-xs text-slate-600 leading-relaxed">{loc.sec02Help}</p>
+
+          <div className="space-y-1.5 pt-0.5">
             {[
               {
                 key: 'acute_scrotal_pain' as const,
@@ -220,10 +223,10 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
               return (
                 <label
                   key={item.key}
-                  className={`flex items-center gap-2.5 py-2 px-2.5 rounded-lg border cursor-pointer min-h-[40px] transition-colors ${
+                  className={`flex items-center gap-3 py-2.5 px-3 rounded-xl border cursor-pointer min-h-[44px] transition-colors ${
                     checked
-                      ? 'bg-rose-100/75 border-rose-300 text-rose-950'
-                      : 'border-transparent hover:bg-rose-50/70 hover:border-rose-200/70'
+                      ? 'bg-rose-100/80 border-rose-300 text-rose-950'
+                      : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300 text-slate-800'
                   }`}
                 >
                   <input
@@ -238,26 +241,26 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                         },
                       })
                     }
-                    className="w-4 h-4 rounded border-slate-300 text-rose-700 accent-rose-700 focus:ring-rose-600"
+                    className="w-4 h-4 rounded border-slate-300 text-rose-700 accent-rose-700 focus:ring-rose-600 shrink-0"
                   />
-                  <span className="text-sm text-slate-800">{item.label}</span>
+                  <span className="text-sm leading-snug">{item.label}</span>
                 </label>
               );
             })}
           </div>
         </div>
 
-        {/* 03. Modifiable Lifestyle & Exposure Signals */}
-        <div className="p-4 space-y-3">
-          <h3 className="text-xs font-semibold tracking-wide text-sky-900">
+        {/* Lifestyle & Environment */}
+        <div className="p-5 space-y-3.5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]">
             {loc.sec03Title}
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="sm:col-span-2">
               <label
                 htmlFor="tobacco-use"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.tobaccoLabel}
               </label>
@@ -270,7 +273,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                     tobacco_use: e.target.value as TobaccoExposure,
                   })
                 }
-                className="w-full h-10 px-2.5 text-sm bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={fieldClasses}
               >
                 <option value="none">{loc.tobaccoNone}</option>
                 <option value="occasional_or_vaping">{loc.tobaccoOccasional}</option>
@@ -281,7 +284,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
             <div className="sm:col-span-2">
               <label
                 htmlFor="heat-exposure"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.heatLabel}
               </label>
@@ -294,7 +297,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                     heat_exposure: e.target.value as HeatExposure,
                   })
                 }
-                className="w-full h-10 px-2.5 text-sm bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={fieldClasses}
               >
                 <option value="minimal">{loc.heatMinimal}</option>
                 <option value="moderate">{loc.heatModerate}</option>
@@ -305,7 +308,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
             <div>
               <label
                 htmlFor="abstinence-days"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.abstinenceLabel}
               </label>
@@ -321,14 +324,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder={loc.abstinencePlaceholder}
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={numberFieldClasses}
               />
             </div>
 
             <div>
               <label
                 htmlFor="sedentary-hours"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.sedentaryLabel}
               </label>
@@ -344,14 +347,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder="7.5"
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={numberFieldClasses}
               />
             </div>
 
             <div>
               <label
                 htmlFor="sleep-hours"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.sleepLabel}
               </label>
@@ -367,14 +370,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder="7.5"
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={numberFieldClasses}
               />
             </div>
 
             <div>
               <label
                 htmlFor="alcohol-intake"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.alcoholLabel}
               </label>
@@ -387,7 +390,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                     alcohol_intake: e.target.value as AlcoholIntake,
                   })
                 }
-                className="w-full h-10 px-2.5 text-sm bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={fieldClasses}
               >
                 <option value="none_or_light">{loc.alcoholLight}</option>
                 <option value="moderate">{loc.alcoholModerate}</option>
@@ -398,7 +401,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
             <div>
               <label
                 htmlFor="bmi-input"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.bmiLabel}
               </label>
@@ -414,14 +417,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder="24.5"
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={numberFieldClasses}
               />
             </div>
 
             <div>
               <label
                 htmlFor="ttc-months"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 {loc.ttcLabel}
               </label>
@@ -437,36 +440,36 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                   })
                 }
                 placeholder={loc.optionalPlaceholder}
-                className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                className={numberFieldClasses}
               />
             </div>
           </div>
         </div>
 
-        {/* 04. Optional Hormone Markers */}
-        <div className={hormonePanelOpen ? 'p-4 bg-sky-50/35 transition-colors' : 'p-4'}>
+        {/* Optional Hormone Lab Panel (collapsed by default unless filled) */}
+        <div className={hormonePanelOpen ? 'p-5 bg-slate-50/50 transition-colors' : 'p-5'}>
           <button
             type="button"
             onClick={() => setHormonePanelOpen((v) => !v)}
             aria-expanded={hormonePanelOpen}
-            className="w-full flex items-center justify-between text-left py-1 text-xs font-semibold tracking-wide text-indigo-950 hover:text-teal-800 focus-visible:outline-2 focus-visible:outline-teal-700 rounded"
+            className="w-full flex items-center justify-between text-left min-h-[44px] py-1 text-xs font-semibold uppercase tracking-wide text-[#0F4C5C] hover:text-[#0C3E4B] focus-visible:outline-2 focus-visible:outline-[#0F4C5C] rounded-lg"
           >
             <span>{loc.sec04Title}</span>
             {hormonePanelOpen ? (
-              <ChevronUp className="w-4 h-4 text-teal-700" aria-hidden="true" />
+              <ChevronUp className="w-4 h-4 text-[#0F4C5C] shrink-0" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-500" aria-hidden="true" />
+              <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
             )}
           </button>
 
           {hormonePanelOpen && (
             <div className="mt-3 space-y-3">
-              <p className="text-xs text-slate-600">{loc.sec04Help}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{loc.sec04Help}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label
                     htmlFor="lh-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
                     {loc.lhLabel}
                   </label>
@@ -485,14 +488,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                       })
                     }
                     placeholder={`${loc.refAbbrev} 1.7–8.6`}
-                    className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                    className={numberFieldClasses}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="fsh-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
                     {loc.fshLabel}
                   </label>
@@ -511,14 +514,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                       })
                     }
                     placeholder={`${loc.refAbbrev} 1.5–12.4`}
-                    className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                    className={numberFieldClasses}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="tt-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
                     {loc.ttLabel}
                   </label>
@@ -537,14 +540,14 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                       })
                     }
                     placeholder={`${loc.refAbbrev} 300–1000`}
-                    className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                    className={numberFieldClasses}
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="e2-input"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
                     {loc.e2Label}
                   </label>
@@ -563,7 +566,7 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
                       })
                     }
                     placeholder={`${loc.refAbbrev} 10–40`}
-                    className="w-full h-10 px-2.5 text-sm font-mono tabular-nums bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-colors"
+                    className={numberFieldClasses}
                   />
                 </div>
               </div>
@@ -571,18 +574,18 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
           )}
         </div>
 
-        {/* 05. Context Notes */}
-        <div className="p-4 space-y-2">
+        {/* Context Notes */}
+        <div className="p-5 space-y-2.5">
           <label
             htmlFor="clinical-notes"
-            className="block text-xs font-semibold tracking-wide text-emerald-900"
+            className="block text-xs font-semibold uppercase tracking-wide text-[#0F4C5C]"
           >
             {loc.sec05Title}
           </label>
           <textarea
             id="clinical-notes"
             dir={input.preferred_language === 'ar' ? 'rtl' : 'ltr'}
-            rows={2}
+            rows={3}
             value={input.clinical_context_notes ?? ''}
             onChange={(e) =>
               onChange({
@@ -591,16 +594,16 @@ export const IntakeConsole: React.FC<IntakeConsoleProps> = ({
               })
             }
             placeholder={loc.notesPlaceholder}
-            className="w-full px-2.5 py-2 text-sm bg-white border border-slate-300/90 rounded-lg text-slate-900 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all duration-150"
+            className="w-full px-3 py-2.5 text-sm bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-[#0F4C5C] focus:ring-2 focus:ring-[#0F4C5C]/15 focus:outline-none transition-colors leading-relaxed"
           />
         </div>
 
         {/* Submit Action */}
-        <div className="p-4 bg-gradient-to-r from-teal-50/60 to-sky-50/50">
+        <div className="p-5 bg-slate-50/75">
           <button
             type="submit"
             disabled={isSynthesizing}
-            className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-blue-700 rounded-lg hover:from-teal-700 hover:to-blue-800 active:scale-[0.99] disabled:opacity-60 shadow-sm transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="w-full min-h-[48px] py-3 px-4 text-sm font-semibold text-white bg-[#0F4C5C] rounded-xl hover:bg-[#0C3E4B] active:scale-[0.99] disabled:opacity-60 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F4C5C]"
           >
             {isSynthesizing ? loc.synthesizingButton : loc.evaluateButton}
           </button>
