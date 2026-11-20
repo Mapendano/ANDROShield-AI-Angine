@@ -1,0 +1,6 @@
+{
+  "name": "AndroShield AI Engine",
+  "description": "Confidential, non-diagnostic clinical pre-screening and triage workspace for male reproductive health risk awareness, red-flag short-circuiting, and clinician summary preparation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
